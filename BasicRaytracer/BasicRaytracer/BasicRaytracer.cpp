@@ -15,7 +15,27 @@
 Vector3 color_ray(const Ray &r) {
 	Vector3 unit_direction = unit_vector(r.direction());
 	double t = 0.5*(unit_direction.y() + 1.0);
-	return (1.0 - t) * Vector3(1.0, 1.0, 1.0) + t * Vector3(0.5, 0.7, 1);
+	return (1.0 - t) * Vector3(1.0, 1.0, 1.0) + t * Vector3(0.5, 0.7, 1.0);
+}
+
+bool hit_sphere(const Vector3& center, double radius, const Ray& r) {
+
+	Vector3 oc = r.origin() - center;
+	double a = dot(r.direction(), r.direction());
+	double b = 2 * dot(r.direction(), oc);
+	double c = dot(oc, oc) - radius * radius;
+
+	double discriminant = b * b - 4 * a * c;
+	
+	return (discriminant > 0);
+}
+
+Vector3 color_sphere(const Ray& r) {
+	if (hit_sphere(Vector3(0, 0, -1), 0.5, r)) { return Vector3(1.0, 0, 0); }
+
+	Vector3 unit_direction = unit_vector(r.direction());
+	float t = 0.5 * (unit_direction.y() + 1);
+	return (1.0 - t) * Vector3(1.0, 1.0, 1.0) + t*Vector3(0.5, 0.7, 1.0);
 }
 
 // create .ppm file
@@ -34,11 +54,16 @@ void create_image(int width, int height, std::string name) {
 
 	output_file << "P3" << "\n" << width << " " << height << "\n" << "255" << "\n";
 
-	// Create plane with "camera" that sits in origin
-	Vector3 lower_left_corner(-2.0, -1.0, -1.0);
-	Vector3 horizontal(4.0, 0.0, 0.0);
-	Vector3 vertical(0.0, 2.0, 0.0);
+	/// Camera will sit at origin point
 	Vector3 origin(0.0, 0.0, 0.0);
+
+	/// Starting at lower left corner, 
+	/// traverse screen horizontally and vertically via offsets
+	Vector3 lower_left_corner(-2.0, -1.0, -1.0);
+	Vector3 horizontal_offset(4.0, 0.0, 0.0);
+	Vector3 vertical_offset(0.0, 2.0, 0.0);
+	
+	
 
 	for (int i = height; i > 0; i--) {
 		for (int j = 0; j < width; j++) {
@@ -47,10 +72,10 @@ void create_image(int width, int height, std::string name) {
 			double v = static_cast<double>(i) / static_cast<double>(height);
 
 			// Setup raycast, basically a line that hit some plane and produces color result at point
-			Ray r(origin, lower_left_corner + u * horizontal + v * vertical);
+			Ray r(origin, lower_left_corner + u * horizontal_offset + v * vertical_offset);
 
 			// RGB triplets
-			Vector3 color = color_ray(r);
+			Vector3 color = color_sphere(r);
 			int i_red = static_cast<int>(255.99*color.r());
 			int i_green = static_cast<int>(255.99*color.g());
 			int i_blue = static_cast<int>(255.99*color.b());
@@ -69,6 +94,6 @@ void create_image(int width, int height, std::string name) {
 
 int main()
 {
-	create_image(640, 480, "image_out/RayTest.ppm");
+	create_image(600, 300, "image_out/RayTest.ppm");
 }
 
